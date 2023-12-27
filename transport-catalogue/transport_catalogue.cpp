@@ -22,14 +22,16 @@ namespace transport_catalogue
         stopname_to_stop_[all_stops_.back().name] = &all_stops_.back();
     }
 
-    const Bus* TransportCatalogue::FindRoute(const std::string& route_number) const
+    const Bus* TransportCatalogue::FindRoute(const std::string_view& route_number) const
     {
-        return busname_to_bus_.count(route_number) ? busname_to_bus_.at(route_number) : nullptr;
+        std::string route(route_number);
+        return busname_to_bus_.count(route) ? busname_to_bus_.at(route) : nullptr;
     }
 
-    const Stop* TransportCatalogue::FindStop(const std::string& stop_name) const
+    const Stop* TransportCatalogue::FindStop(const std::string_view& stop_name) const
     {
-        return stopname_to_stop_.count(stop_name) ? stopname_to_stop_.at(stop_name) : nullptr;
+        std::string stop(stop_name);
+        return stopname_to_stop_.count(stop) ? stopname_to_stop_.at(stop) : nullptr;
     }
 
     const RouteInfo TransportCatalogue::RouteInformation(const std::string& route_number) const
@@ -65,7 +67,7 @@ namespace transport_catalogue
         return unique_stops.size();
     }
 
-    const std::set<std::string> TransportCatalogue::GetBusesOnStop(const std::string& stop_name) const
+    const std::unordered_set<std::string> TransportCatalogue::GetBusesOnStop(const std::string& stop_name) const
     {
         return stopname_to_stop_.at(stop_name)->buses;
     }
