@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <algorithm>
 
 namespace transport_catalogue
 {
@@ -15,7 +16,8 @@ namespace transport_catalogue
         {
             output << "Bus " << route << ": " << tansport_catalogue.RouteInformation(route).stops_count << " stops on route, "
                 << tansport_catalogue.RouteInformation(route).unique_stops_count << " unique stops, " << std::setprecision(6)
-                << tansport_catalogue.RouteInformation(route).route_length << " route length\n";
+                << tansport_catalogue.RouteInformation(route).route_length << " route length, " 
+                << tansport_catalogue.RouteInformation(route).curvature << " curvature\n";
         }
         else
         {
@@ -33,10 +35,14 @@ namespace transport_catalogue
         {
             output << "Stop " << stop_name << ": ";
             std::unordered_set<std::string> buses = tansport_catalogue.GetBusesOnStop(stop_name);
+            std::vector<std::string> buses_vec(buses.begin(), buses.end());
+            
+            std::sort(buses_vec.begin(), buses_vec.end());
+
             if (!buses.empty())
             {
                 output << "buses ";
-                for (const auto& bus : buses)
+                for (const auto& bus : buses_vec)
                 {
                     output << bus << " ";
                 }
@@ -44,7 +50,7 @@ namespace transport_catalogue
             }
             else
             {
-                output << "no buses\n";
+                output << "no buses\n"; 
             }
         }
         else

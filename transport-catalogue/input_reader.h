@@ -36,6 +36,7 @@ namespace transport_catalogue
         void ApplyCommands(TransportCatalogue& catalogue) const;
 
     private:
+
         std::vector<CommandDescription> commands_;
     };
 }

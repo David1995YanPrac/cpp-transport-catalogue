@@ -21,6 +21,7 @@ int main() {
             reader.ParseLine(line);
         }
         reader.ApplyCommands(catalogue);
+
     }
 
     int stat_request_count;
@@ -30,4 +31,5 @@ int main() {
         getline(cin, line);
         ParseAndPrintStat(catalogue, line, cout);
     }
+
 }

@@ -33,11 +33,22 @@ namespace transport_catalogue
         size_t stops_count;
         size_t unique_stops_count;
         double route_length;
+        double curvature;
     };
 
     class TransportCatalogue
     {
     public:
+        struct StopDistancesHasher 
+        {
+            size_t operator()(const std::pair<const Stop*, const Stop*>& points) const 
+            {
+                size_t hash_first = std::hash<const void*>{}(points.first);
+                size_t hash_second = std::hash<const void*>{}(points.second);
+                return hash_first + hash_second * 37;
+            }
+        };
+        
         void AddRoute(const std::string& route_number, const std::vector<std::string>& route_stops, bool circular_route);
         void AddStop(const std::string& stop_name, geo::Coordinates& coordinates);
 
@@ -46,8 +57,10 @@ namespace transport_catalogue
 
         const RouteInfo RouteInformation(const std::string& route_number) const;
 
-        //не могу его убрать в приватную область, так как я использую этот метод напрямую в stat_reader.cpp. Возможно я Вас не правильно понял))
         const std::unordered_set<std::string> GetBusesOnStop(const std::string& stop_name) const;
+
+        void SetDistance(const Stop* from, const Stop* to, const int distance);
+        int GetDistance(const Stop* from, const Stop* to) const;
 
     private:
         size_t UniqueStopsCount(const std::string& route_number) const;
@@ -56,6 +69,8 @@ namespace transport_catalogue
         std::deque<Stop> all_stops_;
         std::unordered_map<std::string, const Bus*> busname_to_bus_;
         std::unordered_map<std::string, const Stop*> stopname_to_stop_;
+
+        std::unordered_map<std::pair<const Stop*, const Stop*>, int, StopDistancesHasher> stop_distances_;
     };
 
 }

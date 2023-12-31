@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <iterator>
+#include <map>
 
 namespace transport_catalogue
 {
@@ -97,14 +98,18 @@ namespace transport_catalogue
                 std::string(line.substr(colon_pos + 1)) };
     }
 
-    void InputReader::ParseLine(std::string_view line) {
+    void InputReader::ParseLine(std::string_view line) 
+    {
         auto command_description = ParseCommandDescription(line);
-        if (command_description) {
+
+        if (command_description) 
+        {
             commands_.push_back(std::move(command_description));
         }
     }
 
-    void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const {
+    void InputReader::ApplyCommands([[maybe_unused]] TransportCatalogue& catalogue) const 
+    {
 
         for (const auto& command : commands_)
         {
@@ -112,6 +117,43 @@ namespace transport_catalogue
             {
                 geo::Coordinates coordinates = ParseCoordinates(command.description);
                 catalogue.AddStop(command.id, coordinates);
+            }
+        }
+
+        for (const auto& command : commands_)
+        {
+            if (command.command == "Stop")
+            {
+                std::string stop_from_name = command.id;
+                const Stop* from = catalogue.FindStop(stop_from_name);
+
+                int distanse = 0;
+                std::string stop_to_name;
+
+                std::vector<std::string_view> result = Split(command.description, ',');
+
+                for (auto& it : result)
+                {
+                    if (it.find_first_of("m to ") == it.npos)
+                    {
+
+                    }
+                    else
+                    {
+                        std::string str = std::string(it);
+
+                        distanse = std::stoi(str.substr(0, str.find_first_of("m to ")));
+
+                        stop_to_name = str.substr(str.find_first_of("m to ")+5);
+                        const Stop* to = catalogue.FindStop(stop_to_name);
+
+                        catalogue.SetDistance(from, to, distanse);
+                        if (!catalogue.GetDistance(from, to)) 
+                        {
+                            catalogue.SetDistance(to, from, distanse);
+                        }
+                    }
+                }
             }
         }
 
@@ -131,6 +173,7 @@ namespace transport_catalogue
                 }
 
                 bool circular_route = (route_stops.front() == route_stops.back());
+
                 catalogue.AddRoute(command.id, route_stops2, circular_route);
             }
         }
