@@ -37,9 +37,12 @@ namespace transport_catalogue {
         void SetDistance(const Stop* from, const Stop* to, const int distance);
         int GetDistance(const Stop* from, const Stop* to) const;
 
-        size_t UniqueStopsCount(std::string_view bus_number) const;
+        BusStat CalculateBusStat(const Bus* bus) const;
+
 
     private:
+        size_t GetUniqueStopsCount(std::string_view bus_number) const;
+
         std::deque<Bus> all_buses_;
         std::deque<Stop> all_stops_;
 
@@ -48,4 +51,5 @@ namespace transport_catalogue {
 
         std::unordered_map<std::pair<const Stop*, const Stop*>, int, StopDistancesHasher> stop_distances_;
     };
+
 } // namespace transport_catalogue

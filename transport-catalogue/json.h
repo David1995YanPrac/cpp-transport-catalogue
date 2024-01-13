@@ -11,47 +11,42 @@ using namespace std::string_view_literals;
 namespace json {
 
     class Node;
-
+    // Для сохранить Dict и Array без изменения
     using Dict = std::map<std::string, Node>;
     using Array = std::vector<Node>;
 
+    // Для выбрасывания ошибки при оишбках парсинга JSON
     class ParsingError : public std::runtime_error {
     public:
         using runtime_error::runtime_error;
     };
 
-    class Node {
+    class Node final : private std::variant<std::nullptr_t, bool, int, double, std::string, Dict, Array> {
     public:
-        using Value = std::variant<std::nullptr_t, std::string, int, double, bool, Array, Dict>;
+        // Сделать доступными все конструкторы родительского варианта класса.
+        using variant::variant;
+        using Value = variant;
 
-        template<typename ValueType>
-        Node(ValueType value) : value_(value) {}
-
-        Node() : value_(nullptr) {}
-
+    public:
+        bool IsNull() const;
+        bool IsBool() const;
         bool IsInt() const;
         bool IsDouble() const;
         bool IsPureDouble() const;
-        bool IsBool() const;
         bool IsString() const;
-        bool IsNull() const;
         bool IsArray() const;
         bool IsMap() const;
 
-        int AsInt() const;
+        const Value& GetValue() const;
         bool AsBool() const;
+        int AsInt() const;
         double AsDouble() const;
         const std::string& AsString() const;
         const Array& AsArray() const;
         const Dict& AsMap() const;
 
-        const Value& GetValue() const;
-
         bool operator==(const Node& rhs) const;
         bool operator!=(const Node& rhs) const;
-
-    private:
-        Value value_;
     };
 
     class Document {
@@ -69,6 +64,7 @@ namespace json {
 
     Document Load(std::istream& input);
 
+    // Контекст вывода, хранит ссылку на поток вывода и текущий отсуп
     struct PrintContext {
         std::ostream& out;
         int indent_step = 4;
@@ -79,7 +75,7 @@ namespace json {
                 out.put(' ');
             }
         }
-
+        // Возвращает новый контекст вывода с увеличенным смещением
         PrintContext Indented() const {
             return { out, indent_step, indent_step + indent };
         }
@@ -90,14 +86,14 @@ namespace json {
     void PrintValue(bool value, const PrintContext& ctx);
     void PrintValue(Array array, const PrintContext& ctx);
     void PrintValue(Dict dict, const PrintContext& ctx);
-
+    
+    // Шаблон для вывода double и int
     template <typename Value>
     void PrintValue(const Value& value, const PrintContext& ctx) {
         ctx.out << value;
     }
 
     void PrintNode(const Node& node, const PrintContext& ctx);
-
     void Print(const Document& doc, std::ostream& output);
 
 }  // namespace json

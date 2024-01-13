@@ -11,7 +11,8 @@ class JsonReader {
 public:
     JsonReader(std::istream& input)
         : input_(json::Load(input))
-    {}
+    {
+    }
 
     const json::Node& GetBaseRequests() const;
     const json::Node& GetStatRequests() const;
@@ -19,8 +20,13 @@ public:
 
     void ProcessRequests(const json::Node& stat_requests, RequestHandler& rh) const;
 
+    void FillCatalogueStop(const json::Array& stops_array, transport_catalogue::TransportCatalogue& catalogue);
+    void FillCatalogueBus(const json::Array& buses_array, transport_catalogue::TransportCatalogue& catalogue);
+
     void FillCatalogue(transport_catalogue::TransportCatalogue& catalogue);
     renderer::MapRenderer FillRenderSettings(const json::Dict& request_map) const;
+
+    svg::Color ParseColor(const json::Node& colorNode) const;
 
     const json::Node PrintRoute(const json::Dict& request_map, RequestHandler& rh) const;
     const json::Node PrintStop(const json::Dict& request_map, RequestHandler& rh) const;

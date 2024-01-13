@@ -25,7 +25,7 @@ namespace transport_catalogue {
         return stopname_to_stop_.count(stop_name) ? stopname_to_stop_.at(stop_name) : nullptr;
     }
 
-    size_t TransportCatalogue::UniqueStopsCount(std::string_view bus_number) const {
+    size_t TransportCatalogue::GetUniqueStopsCount(std::string_view bus_number) const {
         std::unordered_set<std::string_view> unique_stops;
         for (const auto& stop : busname_to_bus_.at(bus_number)->stops) {
             unique_stops.insert(stop->name);
@@ -38,9 +38,15 @@ namespace transport_catalogue {
     }
 
     int TransportCatalogue::GetDistance(const Stop* from, const Stop* to) const {
-        if (stop_distances_.count({ from, to })) return stop_distances_.at({ from, to });
-        else if (stop_distances_.count({ to, from })) return stop_distances_.at({ to, from });
-        else return 0;
+        if (stop_distances_.count({ from, to })) {
+            return stop_distances_.at({ from, to });
+        }
+        else if (stop_distances_.count({ to, from })) {
+            return stop_distances_.at({ to, from });
+        }
+        else {
+            return 0;
+        }
     }
 
     const std::map<std::string_view, const Bus*> TransportCatalogue::GetBusesOnStop() const {
@@ -50,4 +56,40 @@ namespace transport_catalogue {
         }
         return result;
     }
+
+    BusStat TransportCatalogue::CalculateBusStat(const Bus* bus) const {
+        BusStat bus_stat{};
+
+        if (bus->is_circle) {
+            bus_stat.stops_count = bus->stops.size();
+        }
+        else {
+            bus_stat.stops_count = bus->stops.size() * 2 - 1;
+        }
+
+        int route_length = 0;
+        double geographic_length = 0.0;
+
+        for (size_t i = 0; i < bus->stops.size() - 1; ++i) {
+            auto from = bus->stops[i];
+            auto to = bus->stops[i + 1];
+            if (bus->is_circle) {
+                route_length += this->GetDistance(from, to);
+                geographic_length += geo::ComputeDistance(from->coordinates,
+                    to->coordinates);
+            }
+            else {
+                route_length += this->GetDistance(from, to) + this->GetDistance(to, from);
+                geographic_length += geo::ComputeDistance(from->coordinates,
+                    to->coordinates) * 2;
+            }
+        }
+
+        bus_stat.unique_stops_count = this->GetUniqueStopsCount(bus->number);
+        bus_stat.route_length = route_length;
+        bus_stat.curvature = route_length / geographic_length;
+
+        return bus_stat;
+    }
+
 } // namespace transport_catalogue

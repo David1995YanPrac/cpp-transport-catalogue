@@ -19,6 +19,7 @@ namespace json {
             return {};
         }
 
+        // Считывает инф на входе строкового литерала JSON док после считывания открывающего символа ":
         std::string LoadString(std::istream& input) {
             using namespace std::literals;
 
@@ -27,19 +28,24 @@ namespace json {
             std::string s;
             while (true) {
                 if (it == end) {
+                    // Тут выбрасываем ParsingError если поток закончился до того, как встретили закрывающую кавычку
                     throw ParsingError("String parsing error");
                 }
                 const char ch = *it;
                 if (ch == '"') {
+                    // Считали закрывающую кавычку
                     ++it;
                     break;
                 }
                 else if (ch == '\\') {
+                    // Считали начало escape-последовательности
                     ++it;
                     if (it == end) {
+                        // Поток завершился сразу после символа обратной косой черты
                         throw ParsingError("String parsing error");
                     }
                     const char escaped_char = *(it);
+                    // Обрабатываем одну из последовательностей: \\, \n, \t, \r, \"
                     switch (escaped_char) {
                     case 'n':
                         s.push_back('\n');
@@ -57,13 +63,16 @@ namespace json {
                         s.push_back('\\');
                         break;
                     default:
+                        // Считали неизвестную escape-последовательность
                         throw ParsingError("Unrecognized escape sequence \\"s + escaped_char);
                     }
                 }
                 else if (ch == '\n' || ch == '\r') {
+                    // Строковый литерал внутри- JSON не может прерываться символами \r или \n
                     throw ParsingError("Unexpected end of line"s);
                 }
                 else {
+                    // Считываем символ и помещаем его в строку
                     s.push_back(ch);
                 }
                 ++it;
@@ -77,6 +86,7 @@ namespace json {
 
             std::string parsed_num;
 
+            // Тут считываем в parsed_num следующий символ из input
             auto read_char = [&parsed_num, &input] {
                 parsed_num += static_cast<char>(input.get());
                 if (!input) {
@@ -84,6 +94,7 @@ namespace json {
                 }
             };
 
+            // Тут считываем одну или более цифр в parsed_num из input
             auto read_digits = [&input, read_char] {
                 if (!std::isdigit(input.peek())) {
                     throw ParsingError("A digit is expected"s);
@@ -96,20 +107,24 @@ namespace json {
             if (input.peek() == '-') {
                 read_char();
             }
+            // Парсим целую часть числа
             if (input.peek() == '0') {
                 read_char();
+                // После 0 в JSON другие цифры не могут идти
             }
             else {
                 read_digits();
             }
 
             bool is_int = true;
+            // Парсим дробн часть числа
             if (input.peek() == '.') {
                 read_char();
                 read_digits();
                 is_int = false;
             }
 
+            // Парсим exp часть числа
             if (int ch = input.peek(); ch == 'e' || ch == 'E') {
                 read_char();
                 if (ch = input.peek(); ch == '+' || ch == '-') {
@@ -125,6 +140,7 @@ namespace json {
                         return std::stoi(parsed_num);
                     }
                     catch (...) {
+                        // В случае неудачи ниже пробуем преобразовать строку в double
                     }
                 }
                 return std::stod(parsed_num);
@@ -207,81 +223,86 @@ namespace json {
 
     }  // namespace
 
-    bool Node::IsInt() const {
-        return holds_alternative<int>(value_);
-    }
-
-    bool Node::IsDouble() const {
-        return holds_alternative<double>(value_) || holds_alternative<int>(value_);
-    }
-
-    bool Node::IsPureDouble() const {
-        return holds_alternative<double>(value_);
-    }
-
-    bool Node::IsBool() const {
-        return holds_alternative<bool>(value_);
-    }
-
-    bool Node::IsString() const {
-        return holds_alternative<std::string>(value_);
-    }
-
+    // IS - AS
     bool Node::IsNull() const {
-        return holds_alternative<std::nullptr_t>(value_);
+        return std::holds_alternative<std::nullptr_t>(*this);
     }
-
+    bool Node::IsBool() const {
+        return std::holds_alternative<bool>(*this);
+    }
+    bool Node::IsInt() const {
+        return std::holds_alternative<int>(*this);
+    }
+    bool Node::IsDouble() const {
+        return std::holds_alternative<double>(*this) || std::holds_alternative<int>(*this);
+    }
+    bool Node::IsPureDouble() const {
+        return std::holds_alternative<double>(*this);
+    }
+    bool Node::IsString() const {
+        return std::holds_alternative<std::string>(*this);
+    }
     bool Node::IsArray() const {
-        return holds_alternative<Array>(value_);
+        return std::holds_alternative<Array>(*this);
     }
-
     bool Node::IsMap() const {
-        return holds_alternative<Dict>(value_);
-    }
-
-    int Node::AsInt() const {
-        if (!IsInt()) throw ParsingError("not int");
-        return std::get<int>(value_);
-    }
-
-    bool Node::AsBool() const {
-        if (!IsBool()) throw ParsingError("not bool");
-        return std::get<bool>(value_);
-    }
-
-    double Node::AsDouble() const {
-        if (!IsDouble()) throw ParsingError("not double");
-        if (IsInt()) return static_cast<double>(std::get<int>(value_));
-        return std::get<double>(value_);
-    }
-
-    const std::string& Node::AsString() const {
-        if (!IsString()) throw ParsingError("not string");
-        return std::get<std::string>(value_);
-    }
-
-    const Array& Node::AsArray() const {
-        if (!IsArray()) throw ParsingError("not array");
-        return std::get<Array>(value_);
-    }
-
-    const Dict& Node::AsMap() const {
-        if (!IsMap()) throw ParsingError("wrong map");
-        return std::get<Dict>(value_);
+        return std::holds_alternative<Dict>(*this);
     }
 
     const Node::Value& Node::GetValue() const {
-        return value_;
+        return *this;
+    }
+
+    bool Node::AsBool() const {
+        if (auto* value = std::get_if<bool>(this))
+            return *value;
+
+        throw std::logic_error("Impossible to parse node as Boolean"s);
+    }
+
+    int Node::AsInt() const {
+        if (auto* value = std::get_if<int>(this))
+            return *value;
+        throw std::logic_error("Impossible to parse node as Int "s);
+    }
+
+    double Node::AsDouble() const {
+        if (auto* value = std::get_if<double>(this))
+            return *value;
+
+        if (auto* value = std::get_if<int>(this))
+            return static_cast<double>(*value);
+
+        throw std::logic_error("Impossible to parse node as Double "s);
+    }
+
+    const std::string& Node::AsString() const {
+        if (auto* value = std::get_if<std::string>(this))
+            return *value;
+        throw std::logic_error("Impossible to parse node as String"s);
+    }
+
+    const Array& Node::AsArray() const {
+        if (auto* value = std::get_if<Array>(this))
+            return *value;
+        throw std::logic_error("Impossible to parse node as Array"s);
+    }
+
+    const Dict& Node::AsMap() const {
+        if (auto* value = std::get_if<Dict>(this))
+            return *value;
+        throw std::logic_error("Impossible to parse node as Dict"s);
     }
 
     bool Node::operator==(const Node& rhs) const {
-        return value_ == rhs.value_;
+        return *this == rhs.GetValue();
     }
 
     bool Node::operator!=(const Node& rhs) const {
-        return !(value_ == rhs.value_);
+        return !(*this == rhs.GetValue());
     }
 
+    // Documents
     Document::Document(Node root)
         : root_(std::move(root)) {
     }
