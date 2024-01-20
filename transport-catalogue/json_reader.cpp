@@ -6,7 +6,8 @@ enum ColorTypeRGB {
 };
 
 const json::Node& JsonReader::GetBaseRequests() const {
-    const auto& root = input_.GetRoot().AsMap();
+
+    const auto& root = input_.GetRoot().AsDict();
 
     auto it = root.find("base_requests");
 
@@ -19,7 +20,8 @@ const json::Node& JsonReader::GetBaseRequests() const {
 }
 
 const json::Node& JsonReader::GetStatRequests() const {
-    const auto& root = input_.GetRoot().AsMap();
+
+    const auto& root = input_.GetRoot().AsDict();
 
     auto it = root.find("stat_requests");
 
@@ -32,7 +34,8 @@ const json::Node& JsonReader::GetStatRequests() const {
 }
 
 const json::Node& JsonReader::GetRenderSettings() const {
-    const auto& root = input_.GetRoot().AsMap();
+
+    const auto& root = input_.GetRoot().AsDict();
 
     auto it = root.find("render_settings");
 
@@ -47,17 +50,17 @@ const json::Node& JsonReader::GetRenderSettings() const {
 void JsonReader::ProcessRequests(const json::Node& stat_requests, RequestHandler& rh) const {
     json::Array result;
     for (auto& request : stat_requests.AsArray()) {
-        const auto& request_map = request.AsMap();
+        const auto& request_map = request.AsDict();
         const auto& type = request_map.at("type").AsString();
 
         if (type == "Stop") {
-            result.push_back(PrintStop(request_map, rh).AsMap());
+            result.push_back(PrintStop(request_map, rh).AsDict());
         }
         else if (type == "Bus") {
-            result.push_back(PrintRoute(request_map, rh).AsMap());
+            result.push_back(PrintRoute(request_map, rh).AsDict());
         }
         else if (type == "Map") {
-            result.push_back(PrintMap(request_map, rh).AsMap());
+            result.push_back(PrintMap(request_map, rh).AsDict());
         }
     }
 
@@ -66,7 +69,7 @@ void JsonReader::ProcessRequests(const json::Node& stat_requests, RequestHandler
 
 void JsonReader::FillCatalogueStop(const json::Array& stops_array, transport_catalogue::TransportCatalogue& catalogue) {
     for (auto& request_stops : stops_array) {
-        const auto& request_stops_map = request_stops.AsMap();
+        const auto& request_stops_map = request_stops.AsDict();
         const auto& type = request_stops_map.at("type").AsString();
         if (type == "Stop") {
             auto [stop_name, coordinates, stop_distances] = FillStop(request_stops_map);
@@ -78,7 +81,7 @@ void JsonReader::FillCatalogueStop(const json::Array& stops_array, transport_cat
 
 void JsonReader::FillCatalogueBus(const json::Array& buses_array, transport_catalogue::TransportCatalogue& catalogue) {
     for (auto& request_bus : buses_array) {
-        const auto& request_bus_map = request_bus.AsMap();
+        const auto& request_bus_map = request_bus.AsDict();
         const auto& type = request_bus_map.at("type").AsString();
         if (type == "Bus") {
             auto [bus_number, stops, circular_route] = FillRoute(request_bus_map, catalogue);
@@ -98,7 +101,7 @@ std::tuple<std::string_view, geo::Coordinates, std::map<std::string_view, int>> 
     std::string_view stop_name = request_map.at("name").AsString();
     geo::Coordinates coordinates = { request_map.at("latitude").AsDouble(), request_map.at("longitude").AsDouble() };
     std::map<std::string_view, int> stop_distances;
-    auto& distances = request_map.at("road_distances").AsMap();
+    auto& distances = request_map.at("road_distances").AsDict();
     for (auto& [stop_name, dist] : distances) {
         stop_distances.emplace(stop_name, dist.AsInt());
     }
@@ -108,7 +111,7 @@ std::tuple<std::string_view, geo::Coordinates, std::map<std::string_view, int>> 
 void JsonReader::FillStopDistances(transport_catalogue::TransportCatalogue& catalogue) const {
     const json::Array& arr = GetBaseRequests().AsArray();
     for (auto& request_stops : arr) {
-        const auto& request_stops_map = request_stops.AsMap();
+        const auto& request_stops_map = request_stops.AsDict();
         const auto& type = request_stops_map.at("type").AsString();
         if (type == "Stop") {
             auto [stop_name, coordinates, stop_distances] = FillStop(request_stops_map);
