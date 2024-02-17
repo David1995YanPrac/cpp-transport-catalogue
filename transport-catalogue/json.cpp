@@ -5,7 +5,6 @@
 namespace json {
 
     namespace {
-
         using namespace std::literals;
 
         Node LoadNode(std::istream& input);
@@ -267,6 +266,9 @@ namespace json {
                 case '\n':
                     out << "\\n"sv;
                     break;
+                case '\t':
+                    out << "\\t"sv;
+                    break;
                 case '"':
                     // Символы " и \ выводятся как \" или \\, соответственно
                     [[fallthrough]];
@@ -291,7 +293,7 @@ namespace json {
             ctx.out << "null"sv;
         }
 
-        // В специализаци шаблона PrintValue для типа bool параметр value передаётся
+        // В специализации шаблона PrintValue для типа bool параметр value передаётся
         // по константной ссылке, как и в основном шаблоне.
         // В качестве альтернативы можно использовать перегрузку:
         // void PrintValue(bool value, const PrintContext& ctx);

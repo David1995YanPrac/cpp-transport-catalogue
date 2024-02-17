@@ -33,12 +33,12 @@ namespace transport_catalogue {
         const Stop* FindStop(std::string_view stop_name) const;
 
         const std::map<std::string_view, const Bus*> GetBusesOnStop() const;
+        const std::map<std::string_view, const Stop*> GetAllStops() const;
 
         void SetDistance(const Stop* from, const Stop* to, const int distance);
         int GetDistance(const Stop* from, const Stop* to) const;
 
         BusStat CalculateBusStat(const Bus* bus) const;
-
 
     private:
         size_t GetUniqueStopsCount(std::string_view bus_number) const;

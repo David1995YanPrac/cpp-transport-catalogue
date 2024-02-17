@@ -57,6 +57,14 @@ namespace transport_catalogue {
         return result;
     }
 
+    const std::map<std::string_view, const Stop*> TransportCatalogue::GetAllStops() const {
+        std::map<std::string_view, const Stop*> result;
+        for (const auto& stop : stopname_to_stop_) {
+            result.emplace(stop);
+        }
+        return result;
+    }
+
     BusStat TransportCatalogue::CalculateBusStat(const Bus* bus) const {
         BusStat bus_stat{};
 
